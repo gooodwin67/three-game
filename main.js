@@ -1,7 +1,9 @@
 // npx vite --host
 
 import * as THREE from 'three';
-import { RapierPhysics } from 'three/addons/physics/RapierPhysics.js';
+// import { RapierPhysicsPlugin } from '@dimforge/rapier-three';
+// import { RapierRigidBodyComponent } from '@dimforge/rapier-three/components/RigidBodyComponent';
+// import { RapierColliderComponent } from '@dimforge/rapier-three/components/ColliderComponent';
 
 import { OrbitControls } from "three/addons/controls/OrbitControls";
 
@@ -45,30 +47,23 @@ let player2;
 
 let loadData = false;
 
-// let mouse = new THREE.Vector2();
-// let raycaster = new THREE.Raycaster();
-
-// let targetPosition = new THREE.Vector3(0, 0, 0);
-// const speed = 0.1;
 
 init();
 
 async function init() {
-  physics = await RapierPhysics();
+
 
 
   let geometryPlane = new THREE.BoxGeometry(3, 0.1, 7);
   let materialPlane = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide })
   plane = new THREE.Mesh(geometryPlane, materialPlane);
   plane.receiveShadow = true;
-  plane.userData.physics = { mass: 0 };
   scene.add(plane);
 
   let geometryPlayer = new THREE.BoxGeometry(0.5, 0.5, 0.5);
   let materialPlayer = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide })
   player = new THREE.Mesh(geometryPlayer, materialPlayer);
   player.receiveShadow = true;
-  player.userData.physics = { mass: 1 };
 
   player.position.set(0, 2, 0);
   scene.add(player);
@@ -77,11 +72,9 @@ async function init() {
   let materialPlayer2 = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide })
   player2 = new THREE.Mesh(geometryPlayer2, materialPlayer2);
   player2.receiveShadow = true;
-  player2.userData.physics = { mass: 1 };
   player2.position.set(1, 3, 0);
   scene.add(player2);
 
-  physics.addScene(scene);
   loadData = true;
 }
 
@@ -90,8 +83,7 @@ function animate() {
 
   camera.lookAt(0, 0, 0);
   if (loadData) {
-    player.userData.physics.mass = 0;
-    player.position.y += 0.01;
+
   }
 
 

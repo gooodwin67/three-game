@@ -16,7 +16,8 @@ const world = new RAPIER.World(new RAPIER.Vector3(0, -9.81, 0));
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 10, 0);
+camera.position.set(0, 4, 0);
+camera.lookAt(0, 0, -9);
 
 let stats = new Stats();
 document.body.appendChild(stats.dom);
@@ -27,9 +28,9 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 /*/////////////////////////////////////////////////////*/
 
-let controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.target.set(0, 0, 0);
+// let controls = new OrbitControls(camera, renderer.domElement);
+// controls.enableDamping = true;
+// controls.target.set(0, 0, 0);
 /*/////////////////////////////////////////////////////*/
 
 const ambientLight = new THREE.AmbientLight(0xaaaaaa); // soft white light
@@ -55,6 +56,7 @@ let plane;
 let player;
 let playerBody;
 let ground;
+let groundBody;
 
 
 let playerOnGround = false;
@@ -117,23 +119,23 @@ gltfLoader.load(url, (gltf) => {
 
       player = el;
 
+
     }
 
     else if (el.name.includes('ground')) {
 
       el.userData.mass = 0;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
-
-      // let plane1 = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), new THREE.MeshPhongMaterial({ color: 0xff0000 }));
-      // plane1.position.x = el.position.x;
-      // plane1.position.z = el.position.z;
-      // plane1.position.y = el.position.y;
-
-      // scene.add(plane1)
-
-
       addPhysicsToObject(el, el.position, 'fixed', Math.random())
       ground = el;
+
+    }
+    else if (el.name.includes('wall')) {
+
+      el.userData.mass = 1;
+      el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
+      addPhysicsToObject(el, el.position, 'fixed', Math.random())
+      // ground = el;
 
     }
   })
@@ -161,7 +163,7 @@ gltfLoader.load(url, (gltf) => {
 function animate() {
 
   if (dataLoaded) {
-    camera.lookAt(player.position);
+    // camera.lookAt(player.position);
     camera.position.z = player.position.z + 7;
 
     world.step();
@@ -198,7 +200,7 @@ renderer.setAnimationLoop(animate);
 
 document.addEventListener('touchend', onTouchEnd);
 // document.addEventListener('touchstart', onTouchMove);
-// document.addEventListener('touchmove', onTouchMove);
+document.addEventListener('touchmove', onTouchMove);
 
 function onTouchEnd() {
   if (playerOnGround) {
@@ -221,24 +223,24 @@ function onTouchMove(e) {
 
     raycaster.setFromCamera(mouse, camera);
 
-    plane.geometry.computeBoundingBox();
-    var box1 = plane.geometry.boundingBox.clone();
-    box1.applyMatrix4(plane.matrixWorld);
+    ground.geometry.computeBoundingBox();
+    var box1 = ground.geometry.boundingBox.clone();
+    box1.applyMatrix4(ground.matrixWorld);
 
     let intersects = raycaster.ray.intersectBox(box1, new THREE.Vector3());
 
 
-    if (intersects) targetPosition = new THREE.Vector3(intersects.x, player2.position.y, player2.position.z);
+    if (intersects) targetPosition = new THREE.Vector3(intersects.x, player.position.y, player.position.z);
 
 
-    player2Body.setTranslation(targetPosition, true);
+    playerBody.setTranslation(targetPosition, true);
   }
 }
 
 function addPhysicsToObject(obj, pos, mode, id) {
   let body;
   if (mode == 'dynamic') {
-    body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false))
+    body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false).enabledRotations(false))
   }
   else if (mode == 'fixed') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false))

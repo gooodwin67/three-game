@@ -10,13 +10,50 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from "three/addons/controls/OrbitControls";
 
 import { detectCollisionCubes } from "./functions/detectColisions";
+import { detectCollisionCubeAndArray } from "./functions/detectColisions";
 
 await RAPIER.init();
 const world = new RAPIER.World(new RAPIER.Vector3(0, -9.81, 0));
 
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xdceef6);
+scene.fog = new THREE.Fog(scene.background, 1, 5000);
+
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 2);
+hemiLight.color.setHSL(0.6, 1, 0.6);
+hemiLight.groundColor.setHSL(0.095, 1, 0.75);
+hemiLight.position.set(0, 50, 0);
+scene.add(hemiLight);
+
+const hemiLightHelper = new THREE.HemisphereLightHelper(hemiLight, 10);
+scene.add(hemiLightHelper);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+dirLight.color.setHSL(0.1, 1, 0.95);
+dirLight.position.set(- 1, 1.75, 1);
+dirLight.position.multiplyScalar(30);
+scene.add(dirLight);
+
+dirLight.castShadow = true;
+
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+
+const d = 50;
+
+dirLight.shadow.camera.left = - d;
+dirLight.shadow.camera.right = d;
+dirLight.shadow.camera.top = d;
+dirLight.shadow.camera.bottom = - d;
+
+dirLight.shadow.camera.far = 3500;
+dirLight.shadow.bias = - 0.0001;
+
+// const dirLightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
+// scene.add(dirLightHelper);
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 4, 0);
+camera.position.set(0, 4, 1000);
 camera.lookAt(0, 0, -9);
 
 let stats = new Stats();
@@ -26,6 +63,7 @@ document.body.appendChild(stats.dom);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+renderer.shadowMap.enabled = true;
 /*/////////////////////////////////////////////////////*/
 
 // let controls = new OrbitControls(camera, renderer.domElement);
@@ -34,12 +72,9 @@ document.body.appendChild(renderer.domElement);
 /*/////////////////////////////////////////////////////*/
 
 const ambientLight = new THREE.AmbientLight(0xaaaaaa); // soft white light
-scene.add(ambientLight);
+//scene.add(ambientLight);
 
-var light = new THREE.PointLight(0xffffff, 0.6, 200);
-light.position.set(10, 10, 100);
-light.castShadow = true;
-//scene.add(light);
+
 /*/////////////////////////////////////////////////////*/
 
 
@@ -58,6 +93,8 @@ let playerBody;
 let ground;
 let groundBody;
 
+let snow;
+
 
 let playerOnGround = false;
 
@@ -69,6 +106,14 @@ let targetPosition = new THREE.Vector3;
 let raycaster = new THREE.Raycaster;
 
 let dataLoaded = false;
+
+let playerPosMarker = false;
+let groundsMas = [];
+let posMarker = 0;
+
+let groundSize;
+let groundPos;
+let snowSize;
 
 
 
@@ -100,15 +145,18 @@ const url = 'map.glb';
 gltfLoader.load(url, (gltf) => {
   const root = gltf.scene;
 
+
+
   root.traverse(function (child) {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
+
     }
   });
 
 
-  root.children.forEach((el) => {
+  root.traverse((el) => {
     const box = new THREE.Box3().setFromObject(el);
     const size = box.getSize(new THREE.Vector3());
 
@@ -123,11 +171,13 @@ gltfLoader.load(url, (gltf) => {
     }
 
     else if (el.name.includes('ground')) {
-
+      groundSize = size;
+      groundPos = el.position;
       el.userData.mass = 0;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
       addPhysicsToObject(el, el.position, 'fixed', Math.random())
       ground = el;
+      groundsMas.push(ground);
 
     }
     else if (el.name.includes('wall')) {
@@ -136,6 +186,18 @@ gltfLoader.load(url, (gltf) => {
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
       addPhysicsToObject(el, el.position, 'fixed', Math.random())
       // ground = el;
+
+    }
+
+    else if (el.name.includes('snow')) {
+      snowSize = size;
+
+      for (var i = 0; i <= Math.ceil(groundSize.z / snowSize.z) + 1; i++) {
+        snow = el.clone();
+        snow.position.set(snow.position.x, snow.position.y, snow.position.z - (i * 8.8))
+        scene.add(snow);
+      }
+
 
     }
   })
@@ -163,7 +225,7 @@ gltfLoader.load(url, (gltf) => {
 function animate() {
 
   if (dataLoaded) {
-    // camera.lookAt(player.position);
+    camera.lookAt(player.position);
     camera.position.z = player.position.z + 7;
 
     world.step();
@@ -184,10 +246,18 @@ function animate() {
       dynamicBodies[i][0].quaternion.copy(dynamicBodies[i][1].rotation())
     }
 
-    if (detectCollisionCubes(player, ground)) playerOnGround = true;
-    else playerOnGround = false;
 
-    playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -0.01 }, true);
+    if (detectCollisionCubeAndArray(player, groundsMas)) {
+      playerOnGround = true
+    }
+    else { playerOnGround = false };
+
+    playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -0.04 }, true);
+
+    if (player.position.z < groundsMas[posMarker].position.z) {
+      playerPosMarker = true;
+      reloadGround();
+    }
   }
 
 
@@ -235,6 +305,27 @@ function onTouchMove(e) {
 
     playerBody.setTranslation(targetPosition, true);
   }
+}
+
+function reloadGround() {
+
+
+  let newGround = groundsMas[posMarker].clone();
+  newGround.position.set(newGround.position.x, newGround.position.y, newGround.position.z - groundSize.z)
+  scene.add(newGround);
+  groundsMas.push(newGround);
+  newGround.userData.param = new THREE.Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2)
+  addPhysicsToObject(newGround, newGround.position, 'fixed', Math.random());
+
+  console.log(groundsMas[posMarker + 1].position.z)
+
+  for (var i = 0; i <= Math.ceil(groundSize.z / snowSize.z) + 2; i++) {
+    snow = snow.clone();
+    snow.position.set(snow.position.x, snow.position.y, groundsMas[posMarker + 1].position.z + groundSize.z / 2 - (i * 8.8))
+    scene.add(snow);
+  }
+  posMarker++;
+  playerPosMarker = false;
 }
 
 function addPhysicsToObject(obj, pos, mode, id) {

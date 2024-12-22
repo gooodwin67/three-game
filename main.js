@@ -93,6 +93,9 @@ let playerBody;
 let ground;
 let groundBody;
 
+let playerSpeed = 4;
+let intersects;
+
 let snow;
 
 
@@ -204,9 +207,20 @@ gltfLoader.load(url, (gltf) => {
 
 
   scene.add(root);
+
+  const boxSnow = new THREE.Box3().setFromObject(snow);
+  const sizeSnow = boxSnow.getSize(new THREE.Vector3());
+
+  let geometryPlane = new THREE.BoxGeometry(10,0.5,5);
+  let materialPlane = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide, opacity: 0, transparent: true })
+  plane = new THREE.Mesh(geometryPlane, materialPlane);
+  plane.position.set(player.position.x, player.position.y-1, player.position.z+2);
+
+  scene.add(plane);
+
   dataLoaded = true;
 
-
+  playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -playerSpeed }, true);
 
 
   //addPhysicsToAllObjects3D();
@@ -225,7 +239,7 @@ gltfLoader.load(url, (gltf) => {
 function animate() {
 
   if (dataLoaded) {
-    camera.lookAt(player.position);
+    camera.lookAt(new THREE.Vector3(camera.position.x, player.position.y, player.position.z));
     camera.position.z = player.position.z + 7;
 
     world.step();
@@ -252,13 +266,40 @@ function animate() {
     }
     else { playerOnGround = false };
 
-    playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -0.04 }, true);
+    
+    
+
+    plane.position.set(player.position.x, ground.position.y, player.position.z+3);
 
     if (player.position.z < groundsMas[posMarker].position.z) {
       playerPosMarker = true;
       reloadGround();
     }
+    
+    if (Math.abs(playerBody.linvel().z) < playerSpeed) {
+      playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -playerSpeed }, true);
+    }
+    if (intersects) {
+
+      if (player.position.x < intersects.x-0) {
+        
+        playerBody.applyImpulse({ x: 0.05, y: 0.0, z: 0.0 }, true);
+      }
+      else if (player.position.x > intersects.x+0) {
+        
+        playerBody.applyImpulse({ x: -0.05, y: 0.0, z: 0.0 }, true);
+      }
+      else {
+        playerBody.resetForces(true)
+        
+      }
+    }
+    else {
+      playerBody.resetForces(true)
+      
+    }
   }
+
 
 
   // controls.update();
@@ -283,6 +324,7 @@ function onTouchEnd() {
 function onTouchMove(e) {
 
   if (playerOnGround) {
+    playerBody.setLinearDamping(0)
 
     e = e.changedTouches[0];
 
@@ -293,17 +335,19 @@ function onTouchMove(e) {
 
     raycaster.setFromCamera(mouse, camera);
 
-    ground.geometry.computeBoundingBox();
-    var box1 = ground.geometry.boundingBox.clone();
-    box1.applyMatrix4(ground.matrixWorld);
+    plane.geometry.computeBoundingBox();
+    var box1 = plane.geometry.boundingBox.clone();
+    box1.applyMatrix4(plane.matrixWorld);
 
-    let intersects = raycaster.ray.intersectBox(box1, new THREE.Vector3());
+    intersects = raycaster.ray.intersectBox(box1, new THREE.Vector3());
+
+  
+
+    
+    // if (intersects) targetPosition = new THREE.Vector3(intersects.x, player.position.y, player.position.z);
 
 
-    if (intersects) targetPosition = new THREE.Vector3(intersects.x, player.position.y, player.position.z);
-
-
-    playerBody.setTranslation(targetPosition, true);
+    // playerBody.setTranslation(targetPosition, true);
   }
 }
 
@@ -317,7 +361,7 @@ function reloadGround() {
   newGround.userData.param = new THREE.Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2)
   addPhysicsToObject(newGround, newGround.position, 'fixed', Math.random());
 
-  console.log(groundsMas[posMarker + 1].position.z)
+  
 
   for (var i = 0; i <= Math.ceil(groundSize.z / snowSize.z) + 2; i++) {
     snow = snow.clone();

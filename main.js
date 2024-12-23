@@ -17,7 +17,7 @@ const world = new RAPIER.World(new RAPIER.Vector3(0, -9.81, 0));
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xdceef6);
-scene.fog = new THREE.Fog(scene.background, 1, 5000);
+scene.fog = new THREE.Fog(scene.background, 1, 150);
 
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 2);
 hemiLight.color.setHSL(0.6, 1, 0.6);
@@ -93,7 +93,7 @@ let playerBody;
 let ground;
 let groundBody;
 
-let playerSpeed = 4;
+let playerSpeed = 10;
 let intersects;
 
 let snow;
@@ -211,8 +211,8 @@ gltfLoader.load(url, (gltf) => {
   const boxSnow = new THREE.Box3().setFromObject(snow);
   const sizeSnow = boxSnow.getSize(new THREE.Vector3());
 
-  let geometryPlane = new THREE.BoxGeometry(10, 0.5, 5);
-  let materialPlane = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide, opacity: 0, transparent: true })
+  let geometryPlane = new THREE.BoxGeometry(10, 0.5, 100);
+  let materialPlane = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide, opacity: 0.0, transparent: true })
   plane = new THREE.Mesh(geometryPlane, materialPlane);
   plane.position.set(player.position.x, player.position.y - 1, player.position.z + 2);
 

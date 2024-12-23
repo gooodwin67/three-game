@@ -166,7 +166,7 @@ gltfLoader.load(url, (gltf) => {
     if (el.name == 'player') {
       el.userData.mass = 1;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
-      addPhysicsToObject(el, el.position, 'dynamic', 1)
+      addPhysicsToObject(el, el.position, 'dynamic', 1, 'player')
 
       player = el;
 
@@ -178,7 +178,7 @@ gltfLoader.load(url, (gltf) => {
       groundPos = el.position;
       el.userData.mass = 0;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
-      addPhysicsToObject(el, el.position, 'fixed', Math.random())
+      addPhysicsToObject(el, el.position, 'fixed', Math.random(), 'ground')
       ground = el;
       groundsMas.push(ground);
 
@@ -187,7 +187,7 @@ gltfLoader.load(url, (gltf) => {
 
       el.userData.mass = 1;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
-      addPhysicsToObject(el, el.position, 'fixed', Math.random())
+      addPhysicsToObject(el, el.position, 'fixed', Math.random(), 'wall')
       // ground = el;
 
     }
@@ -211,10 +211,10 @@ gltfLoader.load(url, (gltf) => {
   const boxSnow = new THREE.Box3().setFromObject(snow);
   const sizeSnow = boxSnow.getSize(new THREE.Vector3());
 
-  let geometryPlane = new THREE.BoxGeometry(10,0.5,5);
+  let geometryPlane = new THREE.BoxGeometry(10, 0.5, 5);
   let materialPlane = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide, opacity: 0, transparent: true })
   plane = new THREE.Mesh(geometryPlane, materialPlane);
-  plane.position.set(player.position.x, player.position.y-1, player.position.z+2);
+  plane.position.set(player.position.x, player.position.y - 1, player.position.z + 2);
 
   scene.add(plane);
 
@@ -266,38 +266,38 @@ function animate() {
     }
     else { playerOnGround = false };
 
-    
-    
 
-    plane.position.set(player.position.x, ground.position.y, player.position.z+3);
+
+
+    plane.position.set(player.position.x, ground.position.y, player.position.z + 3);
 
     if (player.position.z < groundsMas[posMarker].position.z) {
       playerPosMarker = true;
       reloadGround();
     }
-    
+
     if (Math.abs(playerBody.linvel().z) < playerSpeed) {
       playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -playerSpeed }, true);
     }
-    if (intersects) {
+    // if (intersects) {
 
-      if (player.position.x < intersects.x-0) {
-        
-        playerBody.applyImpulse({ x: 0.05, y: 0.0, z: 0.0 }, true);
-      }
-      else if (player.position.x > intersects.x+0) {
-        
-        playerBody.applyImpulse({ x: -0.05, y: 0.0, z: 0.0 }, true);
-      }
-      else {
-        playerBody.resetForces(true)
-        
-      }
-    }
-    else {
-      playerBody.resetForces(true)
-      
-    }
+    //   if (player.position.x < intersects.x - 0) {
+
+    //     playerBody.applyImpulse({ x: 0.05, y: 0.0, z: 0.0 }, true);
+    //   }
+    //   else if (player.position.x > intersects.x + 0) {
+
+    //     playerBody.applyImpulse({ x: -0.05, y: 0.0, z: 0.0 }, true);
+    //   }
+    //   else {
+    //     playerBody.resetForces(true)
+
+    //   }
+    // }
+    // else {
+    //   playerBody.resetForces(true)
+
+    // }
   }
 
 
@@ -310,7 +310,7 @@ function animate() {
 renderer.setAnimationLoop(animate);
 
 document.addEventListener('touchend', onTouchEnd);
-// document.addEventListener('touchstart', onTouchMove);
+document.addEventListener('touchstart', onTouchMove);
 document.addEventListener('touchmove', onTouchMove);
 
 function onTouchEnd() {
@@ -341,13 +341,13 @@ function onTouchMove(e) {
 
     intersects = raycaster.ray.intersectBox(box1, new THREE.Vector3());
 
-  
-
-    
-    // if (intersects) targetPosition = new THREE.Vector3(intersects.x, player.position.y, player.position.z);
 
 
-    // playerBody.setTranslation(targetPosition, true);
+
+    if (intersects) targetPosition = new THREE.Vector3(intersects.x, player.position.y, player.position.z);
+
+
+    playerBody.setTranslation(targetPosition, true);
   }
 }
 
@@ -359,9 +359,9 @@ function reloadGround() {
   scene.add(newGround);
   groundsMas.push(newGround);
   newGround.userData.param = new THREE.Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2)
-  addPhysicsToObject(newGround, newGround.position, 'fixed', Math.random());
+  addPhysicsToObject(newGround, newGround.position, 'fixed', Math.random(), 'ground');
 
-  
+
 
   for (var i = 0; i <= Math.ceil(groundSize.z / snowSize.z) + 2; i++) {
     snow = snow.clone();
@@ -372,7 +372,7 @@ function reloadGround() {
   playerPosMarker = false;
 }
 
-function addPhysicsToObject(obj, pos, mode, id) {
+function addPhysicsToObject(obj, pos, mode, id, name) {
   let body;
   if (mode == 'dynamic') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false).enabledRotations(false))
@@ -380,8 +380,11 @@ function addPhysicsToObject(obj, pos, mode, id) {
   else if (mode == 'fixed') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false))
   }
-
   const shape = RAPIER.ColliderDesc.cuboid(obj.userData.param.x, obj.userData.param.y, obj.userData.param.z).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
+  if (name == 'wall') {
+    //const shape = RAPIER.ColliderDesc.trimesh(obj.geometry.attributes.position.array, obj.geometry.index.array);
+  }
+
   body.userData = { id: id }
   if (id == 1) playerBody = body
   world.createCollider(shape, body)

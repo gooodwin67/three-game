@@ -89,6 +89,7 @@ camera.position.z = 5;
 
 let plane;
 let player;
+let player2;
 let playerBody;
 let ground;
 let groundBody;
@@ -170,7 +171,12 @@ gltfLoader.load(url, (gltf) => {
 
       player = el;
 
-
+    }
+    else if (el.name == 'player1') {
+      el.userData.mass = 0;
+      el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
+      addPhysicsToObject(el, el.position, 'fixed', 12, 'player2')
+      player2 = el;
     }
 
     else if (el.name.includes('ground')) {
@@ -241,6 +247,7 @@ function animate() {
   if (dataLoaded) {
     camera.lookAt(new THREE.Vector3(camera.position.x, player.position.y, player.position.z));
     camera.position.z = player.position.z + 7;
+
 
     world.step();
 

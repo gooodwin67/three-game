@@ -164,7 +164,7 @@ gltfLoader.load(url, (gltf) => {
     const box = new THREE.Box3().setFromObject(el);
     const size = box.getSize(new THREE.Vector3());
 
-    if (el.name == 'player') {
+    if (el.name == 'player1') {
       el.userData.mass = 1;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
       addPhysicsToObject(el, el.position, 'dynamic', 1, 'player')
@@ -172,12 +172,12 @@ gltfLoader.load(url, (gltf) => {
       player = el;
 
     }
-    else if (el.name == 'player1') {
-      el.userData.mass = 0;
-      el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
-      addPhysicsToObject(el, el.position, 'fixed', 12, 'player2')
-      player2 = el;
-    }
+    // else if (el.name == 'player1') {
+    //   el.userData.mass = 0;
+    //   el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
+    //   addPhysicsToObject(el, el.position, 'fixed', 12, 'player2')
+    //   player2 = el;
+    // }
 
     else if (el.name.includes('ground')) {
       groundSize = size;
@@ -267,7 +267,6 @@ function animate() {
       dynamicBodies[i][0].quaternion.copy(dynamicBodies[i][1].rotation())
     }
 
-
     if (detectCollisionCubeAndArray(player, groundsMas)) {
       playerOnGround = true
     }
@@ -286,6 +285,7 @@ function animate() {
     if (Math.abs(playerBody.linvel().z) < playerSpeed) {
       playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -playerSpeed }, true);
     }
+
     // if (intersects) {
 
     //   if (player.position.x < intersects.x - 0) {
@@ -381,13 +381,16 @@ function reloadGround() {
 
 function addPhysicsToObject(obj, pos, mode, id, name) {
   let body;
+  let shape;
   if (mode == 'dynamic') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false).enabledRotations(false))
+    shape = RAPIER.ColliderDesc.ball(obj.userData.param.y - 0.01).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
   }
   else if (mode == 'fixed') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false))
+    shape = RAPIER.ColliderDesc.cuboid(obj.userData.param.x, obj.userData.param.y, obj.userData.param.z).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
   }
-  const shape = RAPIER.ColliderDesc.cuboid(obj.userData.param.x, obj.userData.param.y, obj.userData.param.z).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
+
   if (name == 'wall') {
     //const shape = RAPIER.ColliderDesc.trimesh(obj.geometry.attributes.position.array, obj.geometry.index.array);
   }

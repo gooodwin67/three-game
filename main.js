@@ -110,6 +110,7 @@ let targetPosition = new THREE.Vector3;
 let raycaster = new THREE.Raycaster;
 
 let dataLoaded = false;
+let playerLoaded = false;
 
 let playerPosMarker = false;
 let groundsMas = [];
@@ -127,20 +128,7 @@ let snowSize;
 
 
 
-// let geometryPlayer2 = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-// let materialPlayer2 = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide })
-// player2 = new THREE.Mesh(geometryPlayer2, materialPlayer2);
-// player2.userData.mass = 1;
-// player2.userData.position = new RAPIER.Vector3(0, 3, 0);
-// player2.userData.param = new THREE.Vector3(0.25, 0.25, 0.25);
-// player2.position.set(0, 2, 0)
-// player2.receiveShadow = true;
-//scene.add(player2);
 
-// const player2Body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(1, 3, 0).setCanSleep(false))
-// const player2Shape = RAPIER.ColliderDesc.cuboid(0.25, 0.25, 0.25).setMass(1).setRestitution(0).setFriction(0);
-// world.createCollider(player2Shape, player2Body)
-// dynamicBodies.push([player2, player2Body])
 
 
 
@@ -164,20 +152,18 @@ gltfLoader.load(url, (gltf) => {
     const box = new THREE.Box3().setFromObject(el);
     const size = box.getSize(new THREE.Vector3());
 
-    if (el.name == 'player1') {
+
+
+    if (el.name == 'player') {
+
+      el.visible = false;
       el.userData.mass = 1;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
-      addPhysicsToObject(el, el.position, 'dynamic', 1, 'player')
+      addPhysicsToObject(el, el.position, 'dynamic', 1, 'player2')
 
-      player = el;
+      player2 = el;
 
     }
-    // else if (el.name == 'player1') {
-    //   el.userData.mass = 0;
-    //   el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
-    //   addPhysicsToObject(el, el.position, 'fixed', 12, 'player2')
-    //   player2 = el;
-    // }
 
     else if (el.name.includes('ground')) {
       groundSize = size;
@@ -214,26 +200,72 @@ gltfLoader.load(url, (gltf) => {
 
   scene.add(root);
 
-  const boxSnow = new THREE.Box3().setFromObject(snow);
-  const sizeSnow = boxSnow.getSize(new THREE.Vector3());
-
   let geometryPlane = new THREE.BoxGeometry(10, 0.5, 100);
   let materialPlane = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide, opacity: 0.0, transparent: true })
   plane = new THREE.Mesh(geometryPlane, materialPlane);
-  plane.position.set(player.position.x, player.position.y - 1, player.position.z + 2);
+  plane.position.set(player2.position.x, player2.position.y - 1, player2.position.z + 2);
 
   scene.add(plane);
+
+
 
   dataLoaded = true;
 
   playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -playerSpeed }, true);
 
 
+
   //addPhysicsToAllObjects3D();
 });
 
 
-//addPhysicsToAllObjects();
+const urlPlayer = 'snowball.glb';
+gltfLoader.load(urlPlayer, (gltf) => {
+  const root = gltf.scene;
+
+
+
+
+
+
+
+
+
+
+
+  root.traverse(function (child) {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+
+    }
+  });
+
+  let el = root.children[0];
+
+  const box = new THREE.Box3().setFromObject(el);
+  const size = box.getSize(new THREE.Vector3());
+
+  el.userData.mass = 1;
+  el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2.2, size.z / 2)
+  //addPhysicsToObject(el, el.position, 'dynamic', 2, 'player')
+
+  player = el;
+
+
+
+  scene.add(player);
+
+
+
+
+  playerLoaded = true;
+
+
+
+
+  //addPhysicsToAllObjects3D();
+});
 
 
 
@@ -244,9 +276,18 @@ gltfLoader.load(url, (gltf) => {
 
 function animate() {
 
-  if (dataLoaded) {
-    camera.lookAt(new THREE.Vector3(camera.position.x, player.position.y, player.position.z));
-    camera.position.z = player.position.z + 7;
+  if (dataLoaded && playerLoaded) {
+    player.position.set(player2.position.x, player2.position.y, player2.position.z)
+
+
+    camera.lookAt(new THREE.Vector3(camera.position.x, player2.position.y, player2.position.z));
+    camera.position.z = player2.position.z + 7;
+
+
+
+
+
+
 
 
     world.step();
@@ -275,7 +316,7 @@ function animate() {
 
 
 
-    plane.position.set(player.position.x, ground.position.y, player.position.z + 3);
+    plane.position.set(player2.position.x, ground.position.y, player2.position.z + 3);
 
     if (player.position.z < groundsMas[posMarker].position.z) {
       playerPosMarker = true;
@@ -283,7 +324,11 @@ function animate() {
     }
 
     if (Math.abs(playerBody.linvel().z) < playerSpeed) {
-      playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -playerSpeed }, true);
+
+      playerBody.applyImpulse({ x: 0.0, y: 0.0, z: -0.1 }, true);
+    }
+    else {
+      player.rotation.x -= 0.2;
     }
 
     // if (intersects) {
@@ -351,7 +396,7 @@ function onTouchMove(e) {
 
 
 
-    if (intersects) targetPosition = new THREE.Vector3(intersects.x, player.position.y, player.position.z);
+    if (intersects) targetPosition = new THREE.Vector3(intersects.x, player2.position.y, player2.position.z);
 
 
     playerBody.setTranslation(targetPosition, true);
@@ -383,8 +428,8 @@ function addPhysicsToObject(obj, pos, mode, id, name) {
   let body;
   let shape;
   if (mode == 'dynamic') {
-    body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false).enabledRotations(false))
-    shape = RAPIER.ColliderDesc.ball(obj.userData.param.y - 0.01).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
+    body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y + 2, pos.z).setCanSleep(false).enabledRotations(false))
+    shape = RAPIER.ColliderDesc.ball(obj.userData.param.y).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
   }
   else if (mode == 'fixed') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false))
@@ -456,3 +501,37 @@ function scaleToFit(obj, bound) {
 
   obj.scale.setScalar(scale);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+/*///////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+// player.mixer = new THREE.AnimationMixer(player);
+//   player.mixers = [];
+//   player.allAnimations = [];
+//   player.mixers.push(player.mixer);
+//   player.clock = new THREE.Clock();
+//   player.animations = gltf.animations;
+
+
+//   player.allAnimations.push(player.userData.playerRotate = player.mixer.clipAction(player.animations[0]));
+//   //player.userData.playerRotate.timeScale = 1;
+
+//   //player.userData.playerRotate.play();
+
+// if (player.mixers.length > 0) {
+
+//   player.mixers[0].update(player.clock.getDelta());
+
+// }
+
+/*///////////////////////////////////////////////////////////////////////////////////////////////////////*/

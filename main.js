@@ -200,7 +200,7 @@ gltfLoader.load(url, (gltf) => {
 
   scene.add(root);
 
-  let geometryPlane = new THREE.BoxGeometry(10, 0.5, 100);
+  let geometryPlane = new THREE.BoxGeometry(50, 0.5, 500);
   let materialPlane = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide, opacity: 0.0, transparent: true })
   plane = new THREE.Mesh(geometryPlane, materialPlane);
   plane.position.set(player2.position.x, player2.position.y - 1, player2.position.z + 2);
@@ -277,11 +277,23 @@ gltfLoader.load(urlPlayer, (gltf) => {
 function animate() {
 
   if (dataLoaded && playerLoaded) {
-    player.position.set(player2.position.x, player2.position.y, player2.position.z)
+    //player.position.set(player2.position.x, player2.position.y, player2.position.z)
 
 
     camera.lookAt(new THREE.Vector3(camera.position.x, player2.position.y, player2.position.z));
     camera.position.z = player2.position.z + 7;
+
+    const direction = new THREE.Vector3().subVectors(player2.position, player.position).normalize();
+
+    if (player.position.distanceTo(player2.position) > 0.2) {
+      player.position.x += direction.x * 0.2;
+      player.position.y += direction.y * 0.2;
+      player.position.z = player2.position.z;
+
+    } else {
+      player.position.copy(player2.position);
+    }
+
 
 
 
@@ -316,12 +328,15 @@ function animate() {
 
 
 
-    plane.position.set(player2.position.x, ground.position.y, player2.position.z + 3);
+    plane.position.set(plane.position.x, ground.position.y, player2.position.z + 3);
 
     if (player.position.z < groundsMas[posMarker].position.z) {
       playerPosMarker = true;
       reloadGround();
     }
+    // if (Math.abs(playerBody.linvel().x) > 0) {
+    //   playerBody.setLinvel({ x: 0.0, y: 0.0, z: -playerSpeed }, true);
+    // }
 
     if (Math.abs(playerBody.linvel().z) < playerSpeed) {
 
@@ -374,6 +389,8 @@ function onTouchEnd() {
 }
 
 function onTouchMove(e) {
+
+  playerBody.setLinvel({ x: 0.0, y: playerBody.linvel().y, z: -playerSpeed }, true)
 
   if (playerOnGround) {
     playerBody.setLinearDamping(0)

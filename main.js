@@ -174,13 +174,18 @@ gltfLoader.load(url, (gltf) => {
       ground = el;
       groundsMas.push(ground);
 
+
+
     }
     else if (el.name.includes('wall')) {
 
       el.userData.mass = 1;
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
+
       addPhysicsToObject(el, el.position, 'fixed', Math.random(), 'wall')
-      // ground = el;
+
+
+
 
     }
 
@@ -317,7 +322,7 @@ function animate() {
 
     for (let i = 0, n = dynamicBodies.length; i < n; i++) {
       dynamicBodies[i][0].position.copy(dynamicBodies[i][1].translation())
-      dynamicBodies[i][0].quaternion.copy(dynamicBodies[i][1].rotation())
+      //dynamicBodies[i][0].quaternion.copy(dynamicBodies[i][1].rotation())
     }
 
     if (detectCollisionCubeAndArray(player, groundsMas)) {
@@ -444,11 +449,15 @@ function reloadGround() {
 function addPhysicsToObject(obj, pos, mode, id, name) {
   let body;
   let shape;
-  if (mode == 'dynamic') {
+  if (name == 'player2') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y + 2, pos.z).setCanSleep(false).enabledRotations(false))
     shape = RAPIER.ColliderDesc.ball(obj.userData.param.y).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
   }
-  else if (mode == 'fixed') {
+  else if (name == 'ground') {
+    body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false))
+    shape = RAPIER.ColliderDesc.cuboid(obj.userData.param.x, obj.userData.param.y, obj.userData.param.z).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
+  }
+  else if (name == 'wall') {
     body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z).setCanSleep(false))
     shape = RAPIER.ColliderDesc.cuboid(obj.userData.param.x, obj.userData.param.y, obj.userData.param.z).setMass(obj.userData.mass).setRestitution(0).setFriction(0);
   }
@@ -461,6 +470,14 @@ function addPhysicsToObject(obj, pos, mode, id, name) {
   if (id == 1) playerBody = body
   world.createCollider(shape, body)
   dynamicBodies.push([obj, body, id])
+  // if (obj.children.length > 0) {
+  //   dynamicBodies.push([obj.children[0], body, id])
+  //   //dynamicBodies.push([obj.children[1], body, id + 100])
+  // }
+  // else {
+  //   dynamicBodies.push([obj, body, id])
+  // }
+
 }
 
 

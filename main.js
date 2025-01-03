@@ -94,7 +94,7 @@ let playerBody;
 let ground;
 let groundBody;
 
-let playerSpeed = 10;
+let playerSpeed = 3;
 let intersects;
 
 let snow;
@@ -108,6 +108,8 @@ let dynamicBodies = [];
 let mouse = new THREE.Vector3;
 let targetPosition = new THREE.Vector3;
 let raycaster = new THREE.Raycaster;
+let raycasterBottom = new THREE.Raycaster;
+let raycasterRight = new THREE.Raycaster;
 
 let dataLoaded = false;
 let playerLoaded = false;
@@ -119,6 +121,8 @@ let posMarker = 0;
 let groundSize;
 let groundPos;
 let snowSize;
+
+let allObjCollision = [];
 
 
 
@@ -173,6 +177,8 @@ gltfLoader.load(url, (gltf) => {
       addPhysicsToObject(el, el.position, 'fixed', Math.random(), 'ground')
       ground = el;
       groundsMas.push(ground);
+      allObjCollision.push(ground);
+
 
 
 
@@ -183,6 +189,8 @@ gltfLoader.load(url, (gltf) => {
       el.userData.param = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2)
 
       addPhysicsToObject(el, el.position, 'fixed', Math.random(), 'wall')
+
+      allObjCollision.push(el);
 
 
 
@@ -197,6 +205,9 @@ gltfLoader.load(url, (gltf) => {
         snow.position.set(snow.position.x, snow.position.y, snow.position.z - (i * 8.8))
         scene.add(snow);
       }
+
+      allObjCollision.push(snow);
+
 
 
     }
@@ -282,7 +293,7 @@ gltfLoader.load(urlPlayer, (gltf) => {
 function animate() {
 
   if (dataLoaded && playerLoaded) {
-    //player.position.set(player2.position.x, player2.position.y, player2.position.z)
+
 
 
     camera.lookAt(new THREE.Vector3(camera.position.x, player2.position.y, player2.position.z));
@@ -325,7 +336,9 @@ function animate() {
       //dynamicBodies[i][0].quaternion.copy(dynamicBodies[i][1].rotation())
     }
 
-    if (detectCollisionCubeAndArray(player, groundsMas)) {
+    //console.log(checkRayBottom(player2));
+
+    if (checkRayBottom(player2).distanceBottom < 0.3) {
       playerOnGround = true
     }
     else { playerOnGround = false };
@@ -420,8 +433,15 @@ function onTouchMove(e) {
 
     if (intersects) targetPosition = new THREE.Vector3(intersects.x, player2.position.y, player2.position.z);
 
+    if (targetPosition.x > player2.position.x && (checkRayBottom(player).distanceRight > 0.2 || checkRayBottom(player).distanceRight == 0)) {
+      playerBody.setTranslation(targetPosition, true);
+    }
+    else if (targetPosition.x < player2.position.x) {
+      playerBody.setTranslation(targetPosition, true);
+    }
 
-    playerBody.setTranslation(targetPosition, true);
+
+
   }
 }
 
@@ -432,6 +452,7 @@ function reloadGround() {
   newGround.position.set(newGround.position.x, newGround.position.y, newGround.position.z - groundSize.z)
   scene.add(newGround);
   groundsMas.push(newGround);
+  allObjCollision.push(newGround);
   newGround.userData.param = new THREE.Vector3(groundSize.x / 2, groundSize.y / 2, groundSize.z / 2)
   addPhysicsToObject(newGround, newGround.position, 'fixed', Math.random(), 'ground');
 
@@ -538,7 +559,41 @@ function scaleToFit(obj, bound) {
 
 
 
+function checkRayBottom(obj) {
+  // Устанавливаем начало луча в позицию меша
+  const origin = obj.position.clone();
+  // Направляем луч вниз (в отрицательном направлении оси Y)
+  const directionBottom = new THREE.Vector3(0, -1, 0).normalize();
+  const directionRight = new THREE.Vector3(1, 0, 0).normalize();
 
+  // Обновляем raycaster с заданной длиной
+  raycasterBottom.set(origin, directionBottom);
+  raycasterRight.set(origin, directionRight);
+
+  let distanceBottom = 0;
+  let distanceRight = 0;
+  let distance;
+
+
+  // Проверяем пересечения с объектами в сцене
+  const intersectsBottom = raycasterBottom.intersectObjects(allObjCollision);
+
+  const intersectsRight = raycasterRight.intersectObjects(allObjCollision);
+
+
+  if (intersectsBottom.length > 0) {
+    const intersection = intersectsBottom[0];
+    distanceBottom = intersection.distance;
+  }
+  if (intersectsRight.length > 0) {
+    const intersection = intersectsRight[0];
+    distanceRight = intersection.distance;
+  }
+  console.log(distanceRight);
+  distance = { distanceBottom: distanceBottom, distanceRight: distanceRight }
+
+  return distance;
+}
 
 
 

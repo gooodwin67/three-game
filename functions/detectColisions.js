@@ -14,8 +14,18 @@ export function detectCollisionCubes(object1, object2) {
 
 export function detectCollisionCubeAndArray(object1, array) {
  object1.geometry.computeBoundingBox();
+
  array.forEach(function (item, index, array) {
-  item.geometry.computeBoundingBox();
+
+  if (item.children.length > 0) {
+
+   item.children.forEach(function (item, index, array) {
+    item.geometry.computeBoundingBox();
+   })
+  }
+  else {
+   item.geometry.computeBoundingBox();
+  }
  });
 
  object1.updateMatrixWorld();
@@ -29,11 +39,23 @@ export function detectCollisionCubeAndArray(object1, array) {
  var intersect = false;
 
  array.forEach(function (item, index, array) {
-  let box2 = item.geometry.boundingBox.clone();
-  box2.applyMatrix4(item.matrixWorld);
+  if (item.children.length > 0) {
+   item.children.forEach(function (item, index, array) {
+    let box2 = item.geometry.boundingBox.clone();
+    box2.applyMatrix4(item.matrixWorld);
 
-  if (box1.intersectsBox(box2)) {
-   intersect = item;
+    if (box1.intersectsBox(box2)) {
+     intersect = item;
+    }
+   })
+  }
+  else {
+   let box2 = item.geometry.boundingBox.clone();
+   box2.applyMatrix4(item.matrixWorld);
+
+   if (box1.intersectsBox(box2)) {
+    intersect = item;
+   }
   }
 
  });

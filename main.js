@@ -107,7 +107,7 @@ let intersects;
 let snow;
 
 
-let playerOnGround = false;
+
 
 
 let dynamicBodies = [];
@@ -169,8 +169,8 @@ gltfLoader.load(url, (gltf) => {
       player = el;
 
 
-      const geometryBottom = new THREE.BoxGeometry(size.x / 4, 0.1, size.z / 4);
-      const materialBottom = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+      const geometryBottom = new THREE.BoxGeometry(size.x / 6, 0.2, size.z / 6);
+      const materialBottom = new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0, transparent: true });
       playerBottomBlock = new THREE.Mesh(geometryBottom, materialBottom);
       playerBottomBlock.position.y = -size.y / 2;
 
@@ -184,7 +184,7 @@ gltfLoader.load(url, (gltf) => {
       playerLeftBlock = new THREE.Mesh(geometryLeft, materialLeft);
       playerLeftBlock.position.x = -size.x / 2;
 
-      const geometryFront = new THREE.BoxGeometry(size.x / 2, size.y / 2, 0.1);
+      const geometryFront = new THREE.BoxGeometry(size.x / 4, size.y / 4, 0.1);
       const materialFront = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       playerFrontBlock = new THREE.Mesh(geometryFront, materialFront);
       playerFrontBlock.position.z = -size.z / 2;
@@ -196,6 +196,11 @@ gltfLoader.load(url, (gltf) => {
       player.userData.jumpStrength = 0.25; // Сила прыжка
 
       player.userData.jump = false;
+
+      player.userData.startSpeed = 0.15;
+      player.userData.speed = player.userData.startSpeed;
+
+      player.userData.playerOnGround = false;
 
       player.userData.hSpeed = 0.3;
       player.position.set(0, 2, 0)
@@ -293,23 +298,33 @@ document.addEventListener('touchend', onTouchEnd);
 document.addEventListener('touchmove', onTouchMove);
 
 function onTouchEnd() {
-  if (playerOnGround) {
-
+  if (player.userData.playerOnGround) {
+    player.userData.jump = true;
   }
 
 
 
-  player.userData.jump = true;
+
 
 
 }
 
 function playerMove() {
 
-  player.position.z -= 0.1;
+  player.position.z -= player.userData.speed;
+  playerBody.rotation.x -= player.userData.speed;
+
+  if (detectCollisionCubeAndArray(playerFrontBlock, allObjCollision)) {
+    player.userData.speed = 0;
+  }
+  else {
+    player.userData.speed = player.userData.startSpeed;
+  }
+
 
   //console.log(player.userData.jump);
   if (detectCollisionCubeAndArray(playerBottomBlock, allObjCollision)) {
+    player.userData.playerOnGround = true;
     //player.position.y = 0; // Устанавливаем куб на уровне земли
     player.userData.velocity = 0; // Останавливаем куб
     if (player.userData.jump) {
@@ -323,6 +338,7 @@ function playerMove() {
   }
   else {
     player.userData.velocity += player.userData.gravity; // Увеличиваем скорость под действием гравитации
+    player.userData.playerOnGround = false;
   }
   player.position.y += player.userData.velocity; // Обновляем позицию куба
 
@@ -372,7 +388,7 @@ function onTouchMove(e) {
 
 
 
-  if (!playerOnGround) {
+  if (player.userData.playerOnGround) {
 
 
     e = e.changedTouches[0];

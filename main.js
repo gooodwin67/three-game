@@ -169,43 +169,52 @@ gltfLoader.load(url, (gltf) => {
       player = el;
 
 
-      const geometryBottom = new THREE.BoxGeometry(size.x / 6, 0.2, size.z / 6);
-      const materialBottom = new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0, transparent: true });
+      const geometryBottom = new THREE.BoxGeometry(size.x / 10, 0.2, size.z / 10);
+      const materialBottom = new THREE.MeshBasicMaterial({ color: 0xffff00, opacity: 0, transparent: false });
       playerBottomBlock = new THREE.Mesh(geometryBottom, materialBottom);
       playerBottomBlock.position.y = -size.y / 2;
+      playerBottomBlock.position.z = size.y / 6;
 
-      const geometryRight = new THREE.BoxGeometry(0.1, size.y / 2, size.z / 2);
+      const geometryRight = new THREE.BoxGeometry(0.1, size.y / 10, size.z / 10);
       const materialRight = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       playerRightBlock = new THREE.Mesh(geometryRight, materialRight);
       playerRightBlock.position.x = size.x / 2;
 
-      const geometryLeft = new THREE.BoxGeometry(0.1, size.y / 2, size.z / 2);
+      const geometryLeft = new THREE.BoxGeometry(0.1, size.y / 10, size.z / 10);
       const materialLeft = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       playerLeftBlock = new THREE.Mesh(geometryLeft, materialLeft);
       playerLeftBlock.position.x = -size.x / 2;
 
-      const geometryFront = new THREE.BoxGeometry(size.x / 4, size.y / 4, 0.1);
+      const geometryFront = new THREE.BoxGeometry(size.x / 4, size.y / 4, 0.2);
       const materialFront = new THREE.MeshBasicMaterial({ color: 0xffff00 });
       playerFrontBlock = new THREE.Mesh(geometryFront, materialFront);
       playerFrontBlock.position.z = -size.z / 2;
+      playerFrontBlock.position.y = size.z / 2;
 
       player.add(importedPlayer, playerBottomBlock, playerRightBlock, playerLeftBlock, playerFrontBlock);
       playerBody = el.children[0];
+
+      player.userData.collideFront = false;
+      player.userData.collideBottom = false;
+
+
       player.userData.velocity = 0; // Начальная скорость
       player.userData.gravity = -0.01; // Ускорение свободного падения
-      player.userData.jumpStrength = 0.25; // Сила прыжка
+      player.userData.jumpStrength = 0.20; // Сила прыжка
 
       player.userData.jump = false;
 
-      player.userData.startSpeed = 0.15;
+      player.userData.startSpeed = 0.15/*0.15;*/
       player.userData.speed = player.userData.startSpeed;
 
       player.userData.playerOnGround = false;
 
-      player.userData.hSpeed = 0.3;
+      player.userData.hSpeed = 0.2;
       player.position.set(0, 2, 0)
 
       scene.add(player)
+      camera.lookAt(new THREE.Vector3(camera.position.x, player.position.y, player.position.z));
+
     }
 
     else if (el.name.includes('ground')) {
@@ -263,7 +272,7 @@ function animate() {
 
   if (dataLoaded) {
 
-    camera.lookAt(new THREE.Vector3(camera.position.x, player.position.y, player.position.z));
+    //camera.lookAt(new THREE.Vector3(camera.position.x, player.position.y, player.position.z));
     camera.position.z = player.position.z + 7;
 
 
@@ -314,10 +323,17 @@ function playerMove() {
   player.position.z -= player.userData.speed;
   playerBody.rotation.x -= player.userData.speed;
 
+  if (player.userData.collideFront && !player.userData.collideBottom) {
+    player.position.z -= 0.05;
+  }
+
+
   if (detectCollisionCubeAndArray(playerFrontBlock, allObjCollision)) {
+    player.userData.collideFront = true;
     player.userData.speed = 0;
   }
   else {
+    player.userData.collideFront = false;
     player.userData.speed = player.userData.startSpeed;
   }
 
@@ -325,7 +341,10 @@ function playerMove() {
   //console.log(player.userData.jump);
   if (detectCollisionCubeAndArray(playerBottomBlock, allObjCollision)) {
     player.userData.playerOnGround = true;
-    //player.position.y = 0; // Устанавливаем куб на уровне земли
+    player.userData.collideBottom = true;
+    //player.position.y = 0.1;
+    //console.log(detectCollisionCubeAndArray(playerBottomBlock, allObjCollision));
+
     player.userData.velocity = 0; // Останавливаем куб
     if (player.userData.jump) {
       player.userData.velocity = player.userData.jumpStrength;
@@ -337,6 +356,7 @@ function playerMove() {
 
   }
   else {
+    player.userData.collideBottom = false;
     player.userData.velocity += player.userData.gravity; // Увеличиваем скорость под действием гравитации
     player.userData.playerOnGround = false;
   }

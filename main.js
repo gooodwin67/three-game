@@ -204,7 +204,7 @@ gltfLoader.load(url, (gltf) => {
 
       player.userData.jump = false;
 
-      player.userData.startSpeed = 0.15/*0.15;*/
+      player.userData.startSpeed = 0.05/*0.15;*/
       player.userData.speed = player.userData.startSpeed;
 
       player.userData.playerOnGround = false;
@@ -303,7 +303,7 @@ function animate() {
 renderer.setAnimationLoop(animate);
 
 document.addEventListener('touchend', onTouchEnd);
-// document.addEventListener('touchstart', onTouchMove);
+document.addEventListener('touchstart', onTouchMove);
 document.addEventListener('touchmove', onTouchMove);
 
 function onTouchEnd() {
@@ -324,7 +324,7 @@ function playerMove() {
   playerBody.rotation.x -= player.userData.speed;
 
   if (player.userData.collideFront && !player.userData.collideBottom) {
-    player.position.z -= 0.05;
+    //player.position.z -= 0.05;
   }
 
 

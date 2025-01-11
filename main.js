@@ -204,7 +204,7 @@ gltfLoader.load(url, (gltf) => {
 
       player.userData.jump = false;
 
-      player.userData.startSpeed = 0.05/*0.15;*/
+      player.userData.startSpeed = 0.15/*0.15;*/
       player.userData.speed = player.userData.startSpeed;
 
       player.userData.playerOnGround = false;
@@ -320,6 +320,10 @@ function onTouchEnd() {
 
 function playerMove() {
 
+  player.scale.x += 0.01
+  player.scale.y += 0.01
+  player.scale.z += 0.01
+
   player.position.z -= player.userData.speed;
   playerBody.rotation.x -= player.userData.speed;
 
@@ -429,7 +433,7 @@ function onTouchMove(e) {
 
 
 
-    if (intersects) targetPosition = new THREE.Vector3(intersects.x, player.position.y, player.position.z);
+    if (intersects) targetPosition = new THREE.Vector3(intersects.x * 2, player.position.y, player.position.z);
 
   }
 }

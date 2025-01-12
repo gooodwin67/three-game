@@ -212,6 +212,8 @@ gltfLoader.load(url, (gltf) => {
       player.userData.hSpeed = 0.2;
       player.position.set(0, 2, 0)
 
+      player.userData.size = size;
+
       scene.add(player)
       camera.lookAt(new THREE.Vector3(camera.position.x, player.position.y, player.position.z));
 
@@ -320,9 +322,7 @@ function onTouchEnd() {
 
 function playerMove() {
 
-  player.scale.x += 0.01
-  player.scale.y += 0.01
-  player.scale.z += 0.01
+
 
   player.position.z -= player.userData.speed;
   playerBody.rotation.x -= player.userData.speed;
@@ -354,8 +354,17 @@ function playerMove() {
       player.userData.velocity = player.userData.jumpStrength;
     }
 
-    player.userData.jump = false;
 
+
+
+    player.userData.jump = false;
+    let bottomCollide = detectCollisionCubeAndArray(playerBottomBlock, allObjCollision);
+    const boxCollide = new THREE.Box3().setFromObject(bottomCollide);
+    const sizeCollide = boxCollide.getSize(new THREE.Vector3());
+    //console.log(bottomCollide.getWorldPosition(new THREE.Vector3()));
+
+
+    player.position.y = sizeCollide.y + bottomCollide.position.y + 0.2;
 
 
   }
